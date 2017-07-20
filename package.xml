@@ -1,0 +1,56 @@
+<?xml version="1.0"?>
+<package>
+  <name>birl_sim_examples</name>
+  <version>0.0.1</version>
+  <description>The birl_sim_examples package</description>
+
+  <maintainer email="522181941@qq.com">
+    BIRL
+  </maintainer>
+  <license>BSD</license>
+  <url type="website">http://sdk.rethinkrobotics.com</url>
+  <url type="repository">
+    https://github.com/birlrobotics/birl_baxter_tasks
+  </url>
+  <url type="bugtracker">
+    https://github.com/birlrobotics/birl_baxter_tasks/issues
+  </url>
+  <author>BIRL</author>
+  <author>Ben</author>
+
+  <buildtool_depend>catkin</buildtool_depend>
+
+  <build_depend>rospy</build_depend>
+  <build_depend>rospack</build_depend>
+  <build_depend>baxter_core_msgs</build_depend>
+  <build_depend>baxter_gazebo</build_depend>
+  <build_depend>baxter_interface</build_depend>
+  <build_depend>baxter_tools</build_depend>
+  <build_depend>gazebo_ros</build_depend>
+  <build_depend>gazebo_msgs</build_depend>
+  <build_depend>baxter_sim_kinematics</build_depend>
+  <build_depend>message_generation</build_depend>
+  <build_depend>std_msgs</build_depend>
+  <build_depend>geometry_msgs</build_depend>
+  <build_depend>sensor_msgs</build_depend>
+  
+
+  <run_depend>rospy</run_depend>
+  <run_depend>rospack</run_depend>
+  <run_depend>baxter_core_msgs</run_depend>
+  <run_depend>baxter_gazebo</run_depend>
+  <run_depend>baxter_interface</run_depend>
+  <run_depend>baxter_tools</run_depend>
+  <run_depend>gazebo_ros</run_depend>
+  <run_depend>gazebo_msgs</run_depend>
+  <run_depend>baxter_sim_kinematics</run_depend>
+  <run_depend>message_runtime</run_depend>
+  <run_depend>std_msgs</run_depend>
+  <run_depend>geometry_msgs</run_depend>
+  <run_depend>sensor_msgs</run_depend>
+  <export>
+    <gazebo_ros gazebo_model_path="${prefix}/models"/>
+    <gazebo_ros gazebo_media_path="${prefix}/models"/>
+  </export>
+
+</package>
