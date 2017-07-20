@@ -8,7 +8,7 @@ prereqursite:
 """
 
 import baxter_interface
-from birl_sim_examples.srv import *
+from birl_baxter_tasks.srv import *
 
 import sys
 import rospy

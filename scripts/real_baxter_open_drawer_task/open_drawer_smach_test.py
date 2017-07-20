@@ -19,7 +19,7 @@ import smach_ros
 import config
 from std_msgs.msg import Empty
 import os
-from birl_sim_examples.srv import *
+from birl_baxter_tasks.srv import *
 
 import baxter_r_arm_dmp
 
@@ -337,7 +337,7 @@ def main():
         if mode_use_manual_anomaly_signal:
             rospy.Subscriber("/manual_anomaly_signal", std_msgs.msg.String, callback_manual_anomaly_signal)
         else:
-            from birl_sim_examples.msg import (
+            from birl_baxter_tasks.msg import (
                 Hmm_Log
             )
             rospy.Subscriber("/hmm_online_result", Hmm_Log, callback_hmm)

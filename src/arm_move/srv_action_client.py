@@ -15,7 +15,7 @@ import struct
 import actionlib
 
 from arm_move import pick_and_place
-from birl_sim_examples.srv import *
+from birl_baxter_tasks.srv import *
 
 from control_msgs.msg import (
     FollowJointTrajectoryAction,

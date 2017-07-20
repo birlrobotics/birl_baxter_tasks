@@ -1,8 +1,8 @@
 <?xml version="1.0"?>
 <package>
-  <name>birl_sim_examples</name>
+  <name>birl_baxter_tasks</name>
   <version>0.0.1</version>
-  <description>The birl_sim_examples package</description>
+  <description>The birl_baxter_tasks package</description>
 
   <maintainer email="522181941@qq.com">
     BIRL

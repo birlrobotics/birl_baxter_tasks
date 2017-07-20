@@ -14,8 +14,8 @@ from std_msgs.msg import (
 )
 
 from baxter_core_msgs.msg import EndpointState 
-from birl_sim_examples.msg import Tag_EndpointPose
-from birl_sim_examples.srv import (
+from birl_baxter_tasks.msg import Tag_EndpointPose
+from birl_baxter_tasks.srv import (
     State_Switch,
     State_SwitchResponse
 )

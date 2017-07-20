@@ -16,8 +16,8 @@ from std_msgs.msg import (
 from baxter_core_msgs.msg import EndpointState
 from sensor_msgs.msg import JointState
 from geometry_msgs.msg import WrenchStamped
-from birl_sim_examples.msg import Tag_MultiModal
-from birl_sim_examples.srv import (
+from birl_baxter_tasks.msg import Tag_MultiModal
+from birl_baxter_tasks.srv import (
     State_Switch,
     State_SwitchResponse
 )

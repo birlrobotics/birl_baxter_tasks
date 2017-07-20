@@ -8,9 +8,9 @@ prereqursite:
 """
 
 import baxter_interface
-from birl_sim_examples.srv import *
+from birl_baxter_tasks.srv import *
 
-from birl_sim_examples.msg import (
+from birl_baxter_tasks.msg import (
     Tag_MultiModal,
     Hmm_Log
 )

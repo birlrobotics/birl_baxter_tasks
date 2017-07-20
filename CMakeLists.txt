@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 2.8.3)
-project(birl_sim_examples)
+project(birl_baxter_tasks)
 
 find_package(catkin REQUIRED COMPONENTS
   rospy

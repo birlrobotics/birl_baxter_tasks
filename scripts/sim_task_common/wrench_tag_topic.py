@@ -15,8 +15,8 @@ from std_msgs.msg import (
 
 
 from geometry_msgs.msg import WrenchStamped 
-from birl_sim_examples.msg import Tag_Wrench
-from birl_sim_examples.srv import (
+from birl_baxter_tasks.msg import Tag_Wrench
+from birl_baxter_tasks.srv import (
     State_Switch,
     State_SwitchResponse
 )
