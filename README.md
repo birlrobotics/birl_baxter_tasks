@@ -2,7 +2,7 @@
 ---
 
 # Purpose Of This Repository
-This repository contains codes that are used to control Rethink Robotics Baxter in several real or simulated tasks.
+This repository contains codes that are used to control Rethink Robotics Baxter in several real or simulated tasks. During the execution of a real task, we will use our [HMM online service](https://github.com/birlrobotics/HMM) to detect unexpected events, or anomalies. Once an anomaly is detected, the task currently being executed will be stopped and we will bring the robot into a recovery state. In the recovery state, we will try to re-execute the failed part of the task; After the anomaly is fixed, the robot will leave the recovery state and go back to its normal task execution. 
 
 The tasks are:
 - simulated
@@ -27,7 +27,7 @@ The tasks are:
 1. select a task-specific launch file in ./launch, then use roslaunch to launch the task. For example, use the following command to launch the place snap task:  
 
     ```bash
-    roslaunch birl_sim_examples place_snap.launch
+    roslaunch birl_baxter_tasks place_snap.launch
     ```
     and the Gazebo simulator will show up, you will see something like this:
 
@@ -65,11 +65,11 @@ The tasks are:
     - If you want to run the pick and place task, use:
         ```bash
         rosrun birl_baxter_tasks pick_n_place_with_5_states_using_joint_trajectory_and_smach_with_recovery.py
-        ```
+           ```
     - If you want to run the open drawer task, use:
         ```bash
         rosrun birl_baxter_tasks open_drawer_smach_test.py
-        ```    
+           ```    
 
 
 
