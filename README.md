@@ -65,13 +65,8 @@ The tasks are:
     - If you want to run the pick and place task, use:
         ```bash
         rosrun birl_baxter_tasks pick_n_place_with_5_states_using_joint_trajectory_and_smach_with_recovery.py
-           ```
+        ```
     - If you want to run the open drawer task, use:
         ```bash
         rosrun birl_baxter_tasks open_drawer_smach_test.py
-           ```    
-
-
-
-
-
+        ```    
