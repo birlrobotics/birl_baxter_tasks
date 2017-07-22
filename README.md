@@ -21,6 +21,7 @@ The tasks are:
 1. install dependencies
    - [baxter_sdk](http://sdk.rethinkrobotics.com/wiki/Workstation_Setup) 
    - [baxter_simulator](http://sdk.rethinkrobotics.com/wiki/Simulator_Installation)
+   - [birl_baxter_common](https://github.com/birlrobotics/birl_baxter_common)
 
 1. catkin_make this package
 
