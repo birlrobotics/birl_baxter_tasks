@@ -37,6 +37,13 @@ from sensor_msgs.msg import (
     Image,
 )
 
+from geometry_msgs.msg import (
+    Pose,
+    Quaternion,
+    Transform,
+)
+
+import copy
 
 event_flag = 1
 execution_history = []
@@ -165,17 +172,36 @@ class GetPickPoseFromVisionModule(smach.State):
             hmm_state_switch_client(self.state)
 
         global pick_pose_from_vision_module
-        pick_pose_from_vision_module = None
+
+        msg_list = []
 
         def vision_module_cb(msg):
-            global pick_pose_from_vision_module
-            pick_pose_from_vision_module = msg         
+            msg_list.append(msg)
+            rospy.loginfo("pose received from vision module")
 
-        vision_sub = rospy.Subscriber("/vision_module", std_msgs.msg.String, vision_module_cb)
+        vision_sub = rospy.Subscriber("/object_pose", Transform, vision_module_cb)
         rospy.sleep(5)
         vision_sub.unregister()
 
-        pick_pose_from_vision_module = hardcoded_data.pick_object_pose
+        msg_length = len(msg_list)
+        if msg_length != 0:
+            rospy.loginfo("received %s pose from vision module"%(msg_length,))
+            sorted_msg_list = sorted(msg_list, key=lambda arg:arg.translation.y)
+            pose_to_use = sorted_msg_list[msg_length/2]
+            pick_pose_from_vision_module = Pose() 
+            pick_pose_from_vision_module.position.x = pose_to_use.translation.x
+            pick_pose_from_vision_module.position.y = pose_to_use.translation.y
+            pick_pose_from_vision_module.position.z = pose_to_use.translation.z
+            pick_pose_from_vision_module.orientation = Quaternion(
+                x = pose_to_use.rotation.x,
+                y = pose_to_use.rotation.y,
+                z = pose_to_use.rotation.z,
+                w = pose_to_use.rotation.w
+            )
+        else:
+            rospy.loginfo("waited and no pose received from vison. we can't proceed.")
+            return 'NeedRecovery'            
+
 
         return 'Succeed'
 
@@ -213,13 +239,22 @@ class Go_to_Pick_Position(smach.State):
         
         tmp_position = copy.deepcopy(pick_object_pose)
         
-        tmp_position.position.z = pick_object_pose.position.z + hardcoded_data.hover_distance*2/4
+        tmp_position.position.z = pick_object_pose.position.z + hardcoded_data.hover_distance
         traj.add_pose_point(tmp_position, 2.0)
         
-        tmp_position.position.z = pick_object_pose.position.z + hardcoded_data.hover_distance*1/4
+        tmp_position.position.z = pick_object_pose.position.z + hardcoded_data.hover_distance
         traj.add_pose_point(tmp_position, 3.0)
+
+        tmp_position.position.z = pick_object_pose.position.z + hardcoded_data.hover_distance*3/4
+        traj.add_pose_point(tmp_position, 4.0)
     
-        traj.add_pose_point(pick_object_pose, 4.0)
+        tmp_position.position.z = pick_object_pose.position.z + hardcoded_data.hover_distance*2/4
+        traj.add_pose_point(tmp_position, 5.0)
+
+        tmp_position.position.z = pick_object_pose.position.z + hardcoded_data.hover_distance*1/4
+        traj.add_pose_point(tmp_position, 6.0)
+
+        traj.add_pose_point(pick_object_pose, 7.0)
 
         traj.start()
         if wait_for_motion_and_detect_anomaly(traj):
@@ -246,13 +281,17 @@ class Go_to_Pick_Hover_Position_Again(smach.State):
         global limb
         global traj
         global limb_interface
+        global pick_pose_from_vision_module
 
         global mode_no_state_trainsition_report
         if not mode_no_state_trainsition_report:
             hmm_state_switch_client(self.state)
         
         current_angles = [limb_interface.joint_angle(joint) for joint in limb_interface.joint_names()]
-        hover_pick_object_pose = hardcoded_data.hover_pick_object_pose
+        hover_pick_object_pose = copy.deepcopy(pick_pose_from_vision_module)
+        hover_pick_object_pose.position.z += hardcoded_data.hover_distance
+
+
         traj.clear('right')
         traj.add_point(current_angles, 0.0)
         traj.add_pose_point(hover_pick_object_pose, 4.0)
@@ -288,7 +327,7 @@ class Go_to_Place_Hover_Position(smach.State):
         hover_place_object_pose = hardcoded_data.hover_place_object_pose
         traj.clear('right')
         traj.add_point(current_angles, 0.0)
-        traj.add_pose_point(hover_place_object_pose, 4.0)
+        traj.add_pose_point(hover_place_object_pose, 6.0)
         traj.start()
         if wait_for_motion_and_detect_anomaly(traj):
             return 'NeedRecovery'    
@@ -556,15 +595,8 @@ def main():
     
 
 if __name__ == '__main__':
-    mode_no_state_trainsition_report = True 
+    mode_no_state_trainsition_report = False 
     mode_no_anomaly_detection = True 
     mode_use_manual_anomaly_signal = False 
     sm = None
     sys.exit(main())
-
-
-
-
-
-
-
