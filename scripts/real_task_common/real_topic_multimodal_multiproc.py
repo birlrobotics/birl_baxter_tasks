@@ -21,6 +21,7 @@ from birl_baxter_tasks.srv import (
     State_Switch,
     State_SwitchResponse
 )
+from control_msgs.msg import FollowJointTrajectoryActionFeedback
 import multiprocessing
 from multiprocessing import Queue
     
@@ -59,6 +60,15 @@ class TopicReceiverProc(multiprocessing.Process):
         while not rospy.is_shutdown():
             rospy.spin()
 
+def check_msg_headers_match(list_of_msg):
+    sorted_list = sorted(list_of_msg, key=lambda x:x.header.stamp)
+    range_of_stamp = (sorted_list[-1].header.stamp-sorted_list[0].header.stamp).to_sec()
+    print range_of_stamp 
+    if range_of_stamp < 0.05:
+        return True
+    else:
+        return False
+
 def main():
     global hmm_state
     hmm_state = 0
@@ -72,10 +82,12 @@ def main():
         ["/robot/limb/right/endpoint_state", EndpointState],
         ["/robot/joint_states", JointState],
         ["/robotiq_force_torque_wrench", WrenchStamped],
+        ["/robot/limb/right/follow_joint_trajectory/feedback", FollowJointTrajectoryActionFeedback],
     ]
     endpoint_state_idx = 0 
     joint_state_idx = 1
     force_sensor_idx = 2
+    traj_feedbk_idx = 3
 
     list_of_proc = []
     list_of_com_queue = []
@@ -91,7 +103,8 @@ def main():
     pub = rospy.Publisher("/tag_multimodal",Tag_MultiModal, queue_size=10)
 
     r = rospy.Rate(publishing_rate)
-    
+
+    traj_feedbk = FollowJointTrajectoryActionFeedback()
     tag_multimodal = Tag_MultiModal()
     while not rospy.is_shutdown():
         tag_multimodal.tag = hmm_state
@@ -110,7 +123,11 @@ def main():
         if not list_of_com_queue[force_sensor_idx].empty():
             tag_multimodal.wrench_stamped = list_of_com_queue[force_sensor_idx].get()
 
-        pub.publish(tag_multimodal)
+        if not list_of_com_queue[traj_feedbk_idx].empty():
+            traj_feedbk = list_of_com_queue[traj_feedbk_idx].get()
+
+        if check_msg_headers_match([tag_multimodal.endpoint_state, tag_multimodal.joint_state, traj_feedbk]):
+            pub.publish(tag_multimodal)
 
         r.sleep()
 
