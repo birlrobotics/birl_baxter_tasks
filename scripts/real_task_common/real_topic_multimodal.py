@@ -22,20 +22,20 @@ from birl_baxter_tasks.srv import (
     State_SwitchResponse
 )
 
-shared_header = None
-shared_endpoint_state = None
+shared_header = Header()
+shared_endpoint_state = EndpointState() 
 def callback_endpoint_state(endpoint_state):
     global shared_header
     global shared_endpoint_state 
     shared_header = endpoint_state.header
     shared_endpoint_state = endpoint_state
 
-shared_joint_state = None
+shared_joint_state = JointState()
 def callback_joint_state(joint_state):
     global shared_joint_state
     shared_joint_state = joint_state
 
-shared_wrench_stamped = None
+shared_wrench_stamped = WrenchStamped() 
 def callback_wrench_stamped(wrench_stamped):
     global shared_wrench_stamped
     shared_wrench_stamped = wrench_stamped
@@ -75,25 +75,13 @@ def main():
     r = rospy.Rate(publishing_rate)
     
     while not rospy.is_shutdown():
-        if shared_header is None:
-            rospy.loginfo("shared_header is missing, so no pub")
-        elif shared_endpoint_state is None:
-            rospy.loginfo("shared_endpoint_state is missing, so no pub")
-        elif shared_joint_state is None:
-            rospy.loginfo("shared_joint_state is missing, so no pub")
-        elif shared_wrench_stamped is None:
-            rospy.loginfo("shared_wrench_stamped is missing, so no pub")
-        else:
-            tag_multimodal = Tag_MultiModal()
-            tag_multimodal.tag = hmm_state
-            tag_multimodal.header = copy.deepcopy(shared_header)
-            tag_multimodal.endpoint_state = copy.deepcopy(shared_endpoint_state)
-            tag_multimodal.joint_state = copy.deepcopy(shared_joint_state)
-            tag_multimodal.wrench_stamped = copy.deepcopy(shared_wrench_stamped)
-            try:
-                pub.publish(tag_multimodal)
-            except:
-                ipdb.set_trace()
+        tag_multimodal = Tag_MultiModal()
+        tag_multimodal.tag = hmm_state
+        tag_multimodal.header = copy.deepcopy(shared_header)
+        tag_multimodal.endpoint_state = copy.deepcopy(shared_endpoint_state)
+        tag_multimodal.joint_state = copy.deepcopy(shared_joint_state)
+        tag_multimodal.wrench_stamped = copy.deepcopy(shared_wrench_stamped)
+        pub.publish(tag_multimodal)
 
         r.sleep()
 
