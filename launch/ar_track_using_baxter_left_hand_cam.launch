@@ -1,11 +1,12 @@
 <launch>
+    <node name="node_to_tune_cam_to_high_resolution" pkg="baxter_tools" type="camera_control.py" output="screen" args="-o left_hand_camera -r 1280x800" />
 	<arg name="marker_size" default="5" />
 	<arg name="max_new_marker_error" default="0.08" />
 	<arg name="max_track_error" default="0.05" />
 
     <arg name="cam_image_topic" default="/cameras/left_hand_camera/image" />
 	<arg name="cam_info_topic" default="/cameras/left_hand_camera/camera_info" />	
-	<arg name="output_frame" default="left_hand_camera" />
+	<arg name="output_frame" default="/base" />
 
 	<node name="ar_track_alvar" pkg="ar_track_alvar" type="individualMarkersNoKinect" respawn="false" output="screen" args="$(arg marker_size) $(arg max_new_marker_error) $(arg max_track_error) $(arg cam_image_topic) $(arg cam_info_topic) $(arg output_frame)" />
 </launch>

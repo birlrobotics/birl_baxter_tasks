@@ -8,7 +8,7 @@ import tf
 
 if __name__ == '__main__':
     rospy.init_node('push_button_tf_broadcaster')
-    rate = rospy.Rate(10)
+    rate = rospy.Rate(1)
     while not rospy.is_shutdown():
         rospy.loginfo('hihi')
         br = tf.TransformBroadcaster()
