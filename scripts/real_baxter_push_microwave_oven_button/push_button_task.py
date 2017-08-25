@@ -16,6 +16,8 @@ import ipdb
 import baxter_interface
 from baxter_interface import CHECK_VERSION
 import copy
+from optparse import OptionParser
+import util
 
 def move_to_start_pose():
     name = ['head_nod', 'head_pan', 'left_e0', 'left_e1', 'left_s0', 'left_s1', 'left_w0', 'left_w1', 'left_w2', 'right_e0', 'right_e1', 'right_s0', 'right_s1', 'right_w0', 'right_w1', 'right_w2', 'torso_t0']
@@ -29,9 +31,25 @@ def move_to_start_pose():
     left.move_to_joint_positions({k:d[k] for k in lj})
     right.move_to_joint_positions({k:d[k] for k in rj})
 
+def build_parser():
+    parser = OptionParser()
+    parser.add_option(
+        "--testmode",
+        action="store_true", 
+        dest="testmode",
+        default = False,
+        help="True if you want testmode.")
+    return parser
+
+
+
 if __name__ == '__main__':
+    parser = build_parser()
+    (options, args) = parser.parse_args()
+
+
     rospy.init_node('push_button_task')
-    '''
+    marker_pub = rospy.Publisher("/visualization_marker", Marker, queue_size=100)
     rs = baxter_interface.RobotEnable(CHECK_VERSION)
     init_state = rs.state().enabled
     def clean_shutdown():
@@ -40,18 +58,20 @@ if __name__ == '__main__':
             rospy.loginfo("Disabling robot...")
             rs.disable()
     rospy.on_shutdown(clean_shutdown)
-
     rospy.loginfo("Enabling robot... ")
     rs.enable()
-    '''
 
     move_to_start_pose()
 
-    listener = tf.TransformListener()
-    from_frame = '/base'
-    to_frame = '/button_co'
-    listener.waitForTransform(from_frame, to_frame, rospy.Time(0), rospy.Duration(10.0))
-    (trans,rot) = listener.lookupTransform(from_frame, to_frame, rospy.Time(0))
+    if options.testmode:
+        trans = (0.920350715896, -0.605202117105, 0.0247626151505)
+        rot = (-0.0066838303625, 0.697091188679, -0.204543722836, 0.687154325116)
+    else:
+        listener = tf.TransformListener()
+        from_frame = '/base'
+        to_frame = '/button_co'
+        listener.waitForTransform(from_frame, to_frame, rospy.Time(0), rospy.Duration(10.0))
+        (trans,rot) = listener.lookupTransform(from_frame, to_frame, rospy.Time(0))
 
     rospy.loginfo("got button pose")
 
@@ -80,8 +100,6 @@ if __name__ == '__main__':
     y_axis_vec = mat[:3, 1]
     z_axis_vec = mat[:3, 2]
 
-    marker_pub = rospy.Publisher("/visualization_marker", Marker, queue_size=100)
-
     limb = 'right'
     traj = srv_action_client.Trajectory(limb)
     traj.clear('right')
@@ -93,25 +111,13 @@ if __name__ == '__main__':
         now_pose.position.y = now_translation[1]
         now_pose.position.z = now_translation[2]
         traj.add_pose_point(now_pose, 5.0+count*5.0)
-        marker = Marker()
-        marker.header.frame_id = "/base"
-        marker.header.stamp = rospy.Time.now()
-        marker.ns = "traj_point" 
-        marker.id = count
-        marker.type = Marker.SPHERE
-        marker.action = Marker.ADD
-        marker.pose = now_pose
-        marker.scale.x = 0.01
-        marker.scale.y = 0.01
-        marker.scale.z = 0.01
-        marker.color.r = 0.0
-        marker.color.g = 0.5
-        marker.color.b = 0.5
-        marker.color.a = float(count)/step_amount*0.5+0.5 
-        marker.lifetime = rospy.Duration()
-        marker_pub.publish(marker)       
-        
 
+        alpha = float(count)/step_amount*0.5+0.5 
+        rgba_tuple = (0, 0.5, 0.5, alpha)
+        util.send_traj_point_marker(marker_pub=marker_pub, pose=now_pose, id=count, rgba_tuple=rgba_tuple)
+
+        rospy.loginfo("add one traj pose")
+        
     #traj.start()
     #traj.wait(100)
     #print traj.result()
