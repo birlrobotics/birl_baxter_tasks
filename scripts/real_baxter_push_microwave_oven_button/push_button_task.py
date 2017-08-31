@@ -135,7 +135,6 @@ if __name__ == '__main__':
 
     # Moveit!
     robot = moveit_commander.RobotCommander()
-    scene = moveit_commander.PlanningSceneInterface()
     group = moveit_commander.MoveGroupCommander("right_arm")
 
     display_trajectory_publisher = rospy.Publisher(
@@ -143,26 +142,22 @@ if __name__ == '__main__':
         moveit_msgs.msg.DisplayTrajectory
     )
 
-    print "============ Reference frame: %s" % group.get_planning_frame()
-    print "============ End effector link: %s" % group.get_end_effector_link() 
-    print "============ Robot Groups:"
-    print robot.get_group_names()
-    print "============ Printing robot state"
-    print robot.get_current_state()
-    print "============"
+    print "============ Generating plan"
+    (plan, fraction) = group.compute_cartesian_path(
+                             list_of_poses,   # waypoints to follow
+                             0.01,        # eef_step
+                             0.0)         # jump_threshold
 
-    print "============ Generating plan 1"
-    pose_target = list_of_poses[0]
-    group.set_pose_target(pose_target)
-    plan1 = group.plan()
     display_trajectory = moveit_msgs.msg.DisplayTrajectory()
     display_trajectory.trajectory_start = robot.get_current_state()
-    display_trajectory.trajectory.append(plan1)
-    print "============ Visulaize plan 1"
+    display_trajectory.trajectory.append(plan)
+    print "============ Visulaize plan"
     display_trajectory_publisher.publish(display_trajectory);
-       
-    print "============ Move plan 1"
-    group.go(wait=True)
+
+
+    print "============ Click a key to execute plan"
+    raw_input()
+
+    group.execute(plan)
     print "============ Done"
-    group.stop()
     rospy.spin()
