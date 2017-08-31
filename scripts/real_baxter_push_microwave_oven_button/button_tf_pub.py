@@ -12,7 +12,7 @@ if __name__ == '__main__':
     while not rospy.is_shutdown():
         rospy.loginfo('hihi')
         br = tf.TransformBroadcaster()
-        br.sendTransform((0,-0.15,0),
+        br.sendTransform((0,-0.06,0),
                      tf.transformations.quaternion_from_euler(pi, 0, -pi/2),
                      rospy.Time.now(),
                      "button_co",
