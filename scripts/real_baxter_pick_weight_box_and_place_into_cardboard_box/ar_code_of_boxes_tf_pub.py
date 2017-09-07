@@ -8,7 +8,9 @@ if __name__ == '__main__':
     rospy.init_node('ar_code_of_boxes_tf_pub')
 
     weight_box_frame = 'ar_marker_1'
+    weight_box_pick_frame = 'pick_pose_frame'
     cardboard_box_frame = 'ar_marker_0'
+    cardboard_box_place_frame = 'place_pose_frame'
     cardboard_depth = 0.15
     cardboard_center_offset = 0.1
 
@@ -21,7 +23,7 @@ if __name__ == '__main__':
     while not rospy.is_shutdown():
         rospy.loginfo('hihi')
 
-        listener.waitForTransform('/base', weight_box_frame, rospy.Time(0), rospy.Duration(10.0))
+        listener.waitForTransform('/base', weight_box_frame, rospy.Time(0), rospy.Duration(100.0))
         (trans,rot) = listener.lookupTransform('/base', weight_box_frame, rospy.Time(0))
 
         mat = transformer_ros.fromTranslationRotation(trans,rot)
@@ -39,11 +41,11 @@ if __name__ == '__main__':
             trans,
             tf.transformations.quaternion_from_matrix(mat),
             rospy.Time.now(),
-            "/pick_pose_frame",
+            weight_box_pick_frame,
             '/base',
         )
 
-        listener.waitForTransform('/base', cardboard_box_frame, rospy.Time(0), rospy.Duration(10.0))
+        listener.waitForTransform('/base', cardboard_box_frame, rospy.Time(0), rospy.Duration(100.0))
         (trans,rot) = listener.lookupTransform('/base', cardboard_box_frame, rospy.Time(0))
 
         mat = transformer_ros.fromTranslationRotation(trans,rot)
@@ -61,7 +63,7 @@ if __name__ == '__main__':
             trans,
             tf.transformations.quaternion_from_matrix(mat),
             rospy.Time.now(),
-            "/place_pose_frame",
+            cardboard_box_place_frame,
             '/base',
         )
         rate.sleep()
