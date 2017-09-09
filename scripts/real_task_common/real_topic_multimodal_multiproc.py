@@ -43,13 +43,7 @@ class TopicReceiverProc(multiprocessing.Process):
         self.com_queue = com_queue
 
     def callback(self, data):
-        # put in only one data. 
-        # if it's not consumed yet, 
-        # we drop the latest data and wait
-        if self.com_queue.empty():
-            self.com_queue.put(data)       
-        else:
-            pass
+        self.com_queue.put(data)       
 
     def run(self):
         # set up Subscribers
@@ -63,10 +57,11 @@ class TopicReceiverProc(multiprocessing.Process):
 def check_msg_headers_match(list_of_msg):
     sorted_list = sorted(list_of_msg, key=lambda x:x.header.stamp)
     range_of_stamp = (sorted_list[-1].header.stamp-sorted_list[0].header.stamp).to_sec()
-    print range_of_stamp 
     if range_of_stamp < 0.05:
+        rospy.loginfo('range_of_stamp %s, which is good.'%range_of_stamp)
         return True
     else:
+        rospy.loginfo('range_of_stamp %s, which is bad.'%range_of_stamp)
         return False
 
 def main():
@@ -82,12 +77,10 @@ def main():
         ["/robot/limb/right/endpoint_state", EndpointState],
         ["/robot/joint_states", JointState],
         ["/robotiq_force_torque_wrench", WrenchStamped],
-        ["/robot/limb/right/follow_joint_trajectory/feedback", FollowJointTrajectoryActionFeedback],
     ]
     endpoint_state_idx = 0 
     joint_state_idx = 1
     force_sensor_idx = 2
-    traj_feedbk_idx = 3
 
     list_of_proc = []
     list_of_com_queue = []
@@ -104,30 +97,65 @@ def main():
 
     r = rospy.Rate(publishing_rate)
 
-    traj_feedbk = FollowJointTrajectoryActionFeedback()
     tag_multimodal = Tag_MultiModal()
+
+    stamp_max_diff = 0.1
+    base_idx = 0
+    queue_amount = len(list_of_com_queue)
     while not rospy.is_shutdown():
+        data_to_send = [None]*queue_amount
+        while True:
+            if data_to_send[base_idx] is None:
+                base_data = list_of_com_queue[base_idx].get(True)
+            else:
+                base_data = data_to_send[base_idx]
+            data_to_send[base_idx] = base_data
+
+            ok_to_send = True
+            base_stamp = base_data.header.stamp
+            now_idx = (base_idx+1)%queue_amount
+            while now_idx != base_idx:
+                if data_to_send[now_idx] is None:
+                    now_data = list_of_com_queue[now_idx].get(True)
+                else:
+                    now_data = data_to_send[now_idx]
+                now_stamp = now_data.header.stamp
+
+                stamp_diff = (now_stamp-base_stamp).to_sec()
+
+                while stamp_diff < 0:
+                    now_data = list_of_com_queue[now_idx].get(True)
+                    now_stamp = now_data.header.stamp
+                    stamp_diff = (now_stamp-base_stamp).to_sec()
+
+                if stamp_diff < stamp_max_diff:
+                    data_to_send[now_idx] = now_data 
+                else:
+                    rospy.loginfo("stamp_diff %s, which is bad"%stamp_diff)
+                    ok_to_send = False
+                    rospy.loginfo("base_idx from %s to %s"%(base_idx, now_idx))
+                    base_idx = now_idx
+                    break
+
+                now_idx = (now_idx+1)%queue_amount
+        
+            if ok_to_send:
+                break
+            else:
+                rospy.loginfo("not ok to send, gonna try new base")
+                continue
+
+
+
         tag_multimodal.tag = hmm_state
+        tag_multimodal.header = base_data.header
 
-        now_header = Header()
-        now_header.stamp = rospy.Time.now()
-        tag_multimodal.header = now_header
+        tag_multimodal.endpoint_state = data_to_send[endpoint_state_idx]
+        tag_multimodal.joint_state = data_to_send[joint_state_idx]
+        tag_multimodal.wrench_stamped = data_to_send[force_sensor_idx]
 
-        if not list_of_com_queue[endpoint_state_idx].empty():
-            tag_multimodal.endpoint_state = list_of_com_queue[endpoint_state_idx].get()
-            
-
-        if not list_of_com_queue[joint_state_idx].empty():
-            tag_multimodal.joint_state = list_of_com_queue[joint_state_idx].get()
-
-        if not list_of_com_queue[force_sensor_idx].empty():
-            tag_multimodal.wrench_stamped = list_of_com_queue[force_sensor_idx].get()
-
-        if not list_of_com_queue[traj_feedbk_idx].empty():
-            traj_feedbk = list_of_com_queue[traj_feedbk_idx].get()
-
-        if check_msg_headers_match([tag_multimodal.endpoint_state, tag_multimodal.joint_state, traj_feedbk]):
-            pub.publish(tag_multimodal)
+        rospy.loginfo('sent at time %s'%tag_multimodal.header.stamp.to_sec())
+        pub.publish(tag_multimodal)
 
         r.sleep()
 
