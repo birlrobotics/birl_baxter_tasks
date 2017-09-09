@@ -17,14 +17,14 @@ starting_joint_angles = {
 }
 
 pick_object_pose = Pose()
-pick_object_pose.position.x = 0.783433342576
-pick_object_pose.position.y = -0.281027705287
-pick_object_pose.position.z = 0.00569489924627
+pick_object_pose.position.x = 0.76301988477
+pick_object_pose.position.y = -0.290728116404
+pick_object_pose.position.z = -0.0195624201388
 pick_object_pose.orientation = Quaternion(
-    x= -0.0634582357249,
-    y= 0.997906913323,
-    z= 0.0122551630271,
-    w= -0.00215769313191
+    x= -0.0259799924463,
+    y= 0.999465665097,
+    z= 0.00445775211005,
+    w= 0.0193275122869,
 )
 
 place_object_pose = copy.deepcopy(pick_object_pose)
