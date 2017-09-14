@@ -18,7 +18,6 @@ import sys
 import rospy
 import copy
 
-from arm_move.srv_client import *
 from arm_move import srv_action_client
 
 import smach
@@ -40,6 +39,21 @@ from sensor_msgs.msg import (
 
 event_flag = 1
 execution_history = []
+
+
+def hmm_state_switch_client(state):
+    rospy.wait_for_service('hmm_state_switch')
+    try:
+
+        hmm_state_switch_proxy = rospy.ServiceProxy('hmm_state_switch',
+                                                    State_Switch)
+        req = State_SwitchRequest()
+        req.state = state
+        resp = hmm_state_switch_proxy(req)
+        if resp.finish.data:
+            print "Hmm State switch to %d succesfully" %state
+    except rospy.ServiceException, e:
+        print "Service call failed: %s"%e
 
 def send_image(path):
     """
@@ -144,7 +158,6 @@ class Go_to_Pick_Hover_Position(smach.State):
         if wait_for_motion_and_detect_anomaly(traj):
             return 'NeedRecovery'    
 
-        #rospy.sleep(1)
         return 'Succeed'
     
 class Go_to_Pick_Position(smach.State):
@@ -225,7 +238,6 @@ class Go_to_Pick_Hover_Position_Again(smach.State):
         if wait_for_motion_and_detect_anomaly(traj):
             return 'NeedRecovery'    
 
-        #rospy.sleep(1)
         return 'Succeed'
 
     
@@ -257,6 +269,7 @@ class Go_to_Place_Hover_Position(smach.State):
         traj.start()
         if wait_for_motion_and_detect_anomaly(traj):
             return 'NeedRecovery'    
+
         return 'Succeed'
     
 class Go_to_Place_Position(smach.State):
