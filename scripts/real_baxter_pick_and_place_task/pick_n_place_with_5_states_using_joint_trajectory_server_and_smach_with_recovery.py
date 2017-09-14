@@ -362,13 +362,16 @@ class Recovery(smach.State):
 
         rospy.loginfo("Unblock anomlay detection")
         event_flag = 1
+
+        rospy.sleep(5)
+
         return 'Reenter_'+next_state
 
 def callback_hmm(msg):
     global event_flag
     # if event_flag is not blocked by Recovery state
     if event_flag != -1:
-        event_flag = msg.event_flag  
+        event_flag = 0
 
 def callback_manual_anomaly_signal(msg):
     global event_flag
@@ -384,6 +387,22 @@ def shutdown():
     traj.clear('right')
     traj.stop()
 
+def calibrate_right_arm():
+    rospy.loginfo('calibrating right arm...')
+    limb = 'right'
+    traj = srv_action_client.Trajectory(limb)
+    limb_interface = baxter_interface.limb.Limb(limb)
+    traj.add_pose_point(hardcoded_data.hover_pick_object_pose, 4.0)
+    traj.start()
+    traj.wait(5)
+
+    rospy.sleep(5)
+    from std_srvs.srv import Trigger
+    trigger = rospy.ServiceProxy('/robotiq_wrench_calibration_service', Trigger)
+    resp = trigger()
+    rospy.sleep(5)
+
+    rospy.loginfo('done...')
         
 def main():
     global mode_no_state_trainsition_report
@@ -397,8 +416,10 @@ def main():
         if mode_use_manual_anomaly_signal:
             rospy.Subscriber("/manual_anomaly_signal", std_msgs.msg.String, callback_manual_anomaly_signal)
         else:
-            rospy.Subscriber("/hmm_online_result", Hmm_Log, callback_hmm)
+            rospy.Subscriber("/anomaly_detection_signal", std_msgs.msg.Header, callback_hmm)
  
+
+
     sm = smach.StateMachine(outcomes=['TaskFailed', 'TaskSucceed'])
 
     global traj
@@ -495,6 +516,9 @@ def main():
 
     if not mode_no_state_trainsition_report:
         hmm_state_switch_client(0)
+
+
+    calibrate_right_arm()
 
     rospy.loginfo('Start state machine execution...')
     outcome = sm.execute()
