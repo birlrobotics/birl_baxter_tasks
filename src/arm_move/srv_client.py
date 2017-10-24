@@ -83,18 +83,6 @@ def gripper_move_client(is_move_close):
     except rospy.ServiceException, e:
         print "Service call failed: %s"%e
         
-def hmm_state_switch_client(state):
-    rospy.wait_for_service('hmm_state_switch')
-    try:
-        hmm_state_switch_proxy = rospy.ServiceProxy('hmm_state_switch',
-                                                    State_Switch)
-        req = State_SwitchRequest()
-        req.state = state
-        resp = hmm_state_switch_proxy(req)
-        if resp.finish.data:
-            print "Hmm State switch to %d succesfully" %state
-    except rospy.ServiceException, e:
-        print "Service call failed: %s"%e
         
 def shutdown():
     rospy.loginfo("Stopping the node...")

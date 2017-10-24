@@ -25,14 +25,26 @@ from control_msgs.msg import FollowJointTrajectoryActionFeedback
 import multiprocessing
 from multiprocessing import Queue
     
-hmm_state = None 
-def state_switch_handle(req):
-    global hmm_state
-    hmm_state = req.state
-    rospy.loginfo("state is changed to %d" %req.state)
-    resp = State_SwitchResponse()
-    resp.finish.data = True
-    return resp
+class StateSwitchProc(multiprocessing.Process):
+    def __init__(self, com_queue):
+        multiprocessing.Process.__init__(self)     
+        self.com_queue = com_queue
+
+    def callback(self, req):
+        timestamp = rospy.Time.now()
+        self.com_queue.put([req.state, timestamp])       
+        resp = State_SwitchResponse()
+        resp.finish.data = True
+        return resp
+
+    def run(self):
+        # set up Subscribers
+        rospy.init_node("StateSwitchProc_node", anonymous=True)
+        rospy.Service('hmm_state_switch', State_Switch, self.callback)
+        while not rospy.is_shutdown():
+            rospy.spin()
+
+
     
 class TopicReceiverProc(multiprocessing.Process):
     def __init__(self, topic_name, topic_type, com_queue):
@@ -65,8 +77,6 @@ def check_msg_headers_match(list_of_msg):
         return False
 
 def main():
-    global hmm_state
-    hmm_state = 0
 
     publishing_rate = 100
     
@@ -91,8 +101,11 @@ def main():
         list_of_proc.append(proc)
         list_of_com_queue.append(com_queue)
 
+    state_com_queue = Queue()
+    state_proc = StateSwitchProc(state_com_queue)
+    state_proc.start()
+
     rospy.init_node("topic_multimodal_multiproc", anonymous=True)
-    state_switch = rospy.Service('hmm_state_switch', State_Switch, state_switch_handle)
     pub = rospy.Publisher("/tag_multimodal",Tag_MultiModal, queue_size=10)
 
     r = rospy.Rate(publishing_rate)
@@ -102,6 +115,10 @@ def main():
     stamp_max_diff = 0.1
     base_idx = 0
     queue_amount = len(list_of_com_queue)
+
+    hmm_state = 0
+    list_of_new_hmm_state = [] 
+    list_of_new_hmm_state_ts = [] 
     while not rospy.is_shutdown():
         data_to_send = [None]*queue_amount
         while True:
@@ -145,7 +162,23 @@ def main():
                 rospy.loginfo("not ok to send, gonna try new base")
                 continue
 
+        if state_com_queue.empty():
+            pass
+        else:
+            new_hmm_state, new_timestamp = state_com_queue.get()
+            rospy.loginfo("new hmm state received %s"%new_hmm_state)
+            list_of_new_hmm_state.append(new_hmm_state)
+            list_of_new_hmm_state_ts.append(new_timestamp) 
 
+        if len(list_of_new_hmm_state) != 0:
+            new_hmm_state = list_of_new_hmm_state[0]
+            new_timestamp = list_of_new_hmm_state_ts[0]
+            if base_data.header.stamp > new_timestamp:
+                rospy.loginfo("hmm_state from %s"%hmm_state)
+                hmm_state = new_hmm_state
+                rospy.loginfo("hmm_state to %s"%hmm_state)
+                del list_of_new_hmm_state[0]
+                del list_of_new_hmm_state_ts[0]
 
         tag_multimodal.tag = hmm_state
         tag_multimodal.header = base_data.header
@@ -154,7 +187,6 @@ def main():
         tag_multimodal.joint_state = data_to_send[joint_state_idx]
         tag_multimodal.wrench_stamped = data_to_send[force_sensor_idx]
 
-        rospy.loginfo('sent at time %s'%tag_multimodal.header.stamp.to_sec())
         pub.publish(tag_multimodal)
 
         r.sleep()
