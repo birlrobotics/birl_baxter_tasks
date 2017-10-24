@@ -10,10 +10,6 @@ prereqursite:
 import baxter_interface
 from birl_baxter_tasks.srv import *
 
-from birl_baxter_tasks.msg import (
-    Hmm_Log
-)
-
 import sys
 import rospy
 import copy
@@ -67,8 +63,6 @@ def send_image(path):
     pub = rospy.Publisher('/robot/xdisplay', Image, latch=True, queue_size=1)
     pub.publish(msg)
     # Sleep to allow for image to be published.
-    rospy.sleep(1)
-
 
 ## @brief wait for trajectory goal to be finished, perform preemptive anomaly detection in the meantime. 
 ## @param trajectory instance 
@@ -221,8 +215,25 @@ class Go_to_Pick_Hover_Position_Again(smach.State):
             return 'NeedRecovery'    
 
         return 'Successful'
+
+
+class AnomalyDiagnosis(smach.State):
+    def __init__(self, outcomes):
+        smach.State.__init__(self, outcomes)
+    def execute(self, userdata):
+        send_image(os.path.join(os.path.dirname(os.path.realpath(__file__)), 'red.jpg'))
+        rospy.sleep(5)
+        return 'GoToRollBackRecovery'
+
+
+class HumanTeachingRecovery(smach.State):
+    def __init__(self, outcomes):
+        smach.State.__init__(self, outcomes)
+    def execute(self, userdata):
+        rospy.sleep(5)
+        return 'RecoveryDone'
     
-class Recovery(smach.State):
+class RollBackRecovery(smach.State):
     def __init__(self, outcomes):
         smach.State.__init__(self, outcomes)
         
@@ -231,10 +242,8 @@ class Recovery(smach.State):
         global execution_history
         global mode_no_state_trainsition_report
 
-        rospy.loginfo("Enter Recovery State...")
+        rospy.loginfo("Enter RollBackRecovery State...")
         rospy.loginfo("Block anomlay detection")
-
-        send_image(os.path.join(os.path.dirname(os.path.realpath(__file__)), 'red.jpg'))
 
         history_to_reexecute = None 
         while True:
@@ -351,18 +360,50 @@ def main():
             }
         )
 
+        raw_user_states = copy.deepcopy(sm._states)
+
+        # redirect all NeedRecovery to their respective anomay diagnosis
+        for user_state in raw_user_states:
+            state_name = user_state 
+            state_transitions = sm._transitions[state_name]
+            if "NeedRecovery" in state_transitions:
+                state_instance = sm._states[state_name]
+                state_no = state_instance.state_no
+                ad_state_name = 'AnomalyDiagnosis%s'%state_no
+                htr_state_name = "HumanTeachingRecovery%s"%state_no
+                state_transitions["NeedRecovery"] = ad_state_name
+
+                smach.StateMachine.add(
+                    ad_state_name,
+                    AnomalyDiagnosis(outcomes=["GoToRollBackRecovery", "GoToHumanTeachingRecovery", "RecoveryDone"]),
+                    transitions={
+                        'GoToRollBackRecovery': 'RollBackRecovery',
+                        'GoToHumanTeachingRecovery': htr_state_name,
+                        'RecoveryDone': state_name,
+                    }
+                )
+
+                smach.StateMachine.add(
+                    htr_state_name,
+                    HumanTeachingRecovery(outcomes=["RecoveryDone"]),
+                    transitions={
+                        'RecoveryDone': ad_state_name,
+                    }
+                )
+
         # build Recovery states automatically
         recovery_outcomes = ['RecoveryFailed']
         recovery_state_transitions = {
             'RecoveryFailed':'TaskFailed'
         }
-        for added_state in sm._states:
-            recovery_outcomes.append('Reenter_'+added_state)
-            recovery_state_transitions['Reenter_'+added_state] = added_state
+        for user_state in raw_user_states:
+            state_name = user_state 
+            recovery_outcomes.append('Reenter_'+state_name)
+            recovery_state_transitions['Reenter_'+state_name] = state_name
 
         smach.StateMachine.add(
-			'Recovery',
-			Recovery(outcomes=recovery_outcomes),
+			RollBackRecovery.__name__,
+			RollBackRecovery(outcomes=recovery_outcomes),
             transitions=recovery_state_transitions
         )
     
