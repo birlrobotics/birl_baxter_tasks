@@ -113,14 +113,14 @@ def execute_decorator(original_execute):
         write_exec_hist(self, type(self).__name__, userdata, depend_on_prev_state )
 
         global mode_no_state_trainsition_report
-        if not mode_no_state_trainsition_report:
+        global event_flag
+
+        if not mode_no_state_trainsition_report and event_flag != -1:
             hmm_state_switch_client(state_no)
         ret = original_execute(self, userdata)
         if not mode_no_state_trainsition_report:
             hmm_state_switch_client(0)
 
-
-        global event_flag
         if event_flag == -1:
             event_flag = 1
             rospy.loginfo("UnBlock anomlay detection")
@@ -221,6 +221,8 @@ class AnomalyDiagnosis(smach.State):
     def __init__(self, outcomes):
         smach.State.__init__(self, outcomes)
     def execute(self, userdata):
+        if not mode_no_state_trainsition_report:
+            hmm_state_switch_client(-1)
         send_image(os.path.join(os.path.dirname(os.path.realpath(__file__)), 'red.jpg'))
         rospy.sleep(5)
         return 'GoToRollBackRecovery'
@@ -230,6 +232,8 @@ class HumanTeachingRecovery(smach.State):
     def __init__(self, outcomes):
         smach.State.__init__(self, outcomes)
     def execute(self, userdata):
+        if not mode_no_state_trainsition_report:
+            hmm_state_switch_client(-3)
         rospy.sleep(5)
         return 'RecoveryDone'
     
@@ -240,7 +244,8 @@ class RollBackRecovery(smach.State):
     def execute(self, userdata):
         global event_flag
         global execution_history
-        global mode_no_state_trainsition_report
+        if not mode_no_state_trainsition_report:
+            hmm_state_switch_client(-2)
 
         rospy.loginfo("Enter RollBackRecovery State...")
         rospy.loginfo("Block anomlay detection")
@@ -369,8 +374,8 @@ def main():
             if "NeedRecovery" in state_transitions:
                 state_instance = sm._states[state_name]
                 state_no = state_instance.state_no
-                ad_state_name = 'AnomalyDiagnosis%s'%state_no
-                htr_state_name = "HumanTeachingRecovery%s"%state_no
+                ad_state_name = 'AnomalyDiagnosisForSkillNo%s'%state_no
+                htr_state_name = "HumanTeachingRecoveryForSkillNo%s"%state_no
                 state_transitions["NeedRecovery"] = ad_state_name
 
                 smach.StateMachine.add(
