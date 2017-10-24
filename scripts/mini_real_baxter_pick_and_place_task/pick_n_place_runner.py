@@ -129,7 +129,7 @@ def execute_decorator(original_execute):
         return ret
     return f
 
-class Go_to_Pick_Hover_Position(smach.State):
+class GotoPickHoverPosition(smach.State):
     def __init__(self):
         smach.State.__init__(self, outcomes=['Successful'])
         
@@ -149,7 +149,7 @@ class Go_to_Pick_Hover_Position(smach.State):
 
         return 'Successful'
     
-class Go_to_Pick_Position(smach.State):
+class GoToPickPosition(smach.State):
     def __init__(self):
         smach.State.__init__(self,
                              outcomes=['Successful', 'NeedRecovery'])
@@ -192,7 +192,7 @@ class Go_to_Pick_Position(smach.State):
 
         return 'Successful'
 
-class Go_to_Pick_Hover_Position_Again(smach.State):
+class GoToPickHoverPositionAgain(smach.State):
     def __init__(self):
         smach.State.__init__(self,
                              outcomes=['Successful', 'NeedRecovery'])
@@ -335,25 +335,25 @@ def main():
     with sm:
 
         smach.StateMachine.add(
-            Go_to_Pick_Hover_Position.__name__,
-            Go_to_Pick_Hover_Position(),
+            GotoPickHoverPosition.__name__,
+            GotoPickHoverPosition(),
             transitions={
-                'Successful': Go_to_Pick_Position.__name__,
+                'Successful': GoToPickPosition.__name__,
             }
         )
 
         smach.StateMachine.add(
-			Go_to_Pick_Position.__name__,
-			Go_to_Pick_Position(),
+			GoToPickPosition.__name__,
+			GoToPickPosition(),
             transitions={
                 'NeedRecovery': 'Recovery',
-                'Successful': Go_to_Pick_Hover_Position_Again.__name__,
+                'Successful': GoToPickHoverPositionAgain.__name__,
             }
         )
 
         smach.StateMachine.add(
-			Go_to_Pick_Hover_Position_Again.__name__,
-			Go_to_Pick_Hover_Position_Again(),
+			GoToPickHoverPositionAgain.__name__,
+			GoToPickHoverPositionAgain(),
             transitions={
                 'NeedRecovery': 'Recovery',
                 'Successful':'TaskSuccessful'
