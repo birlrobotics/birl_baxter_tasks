@@ -61,12 +61,13 @@ def send_image(path):
 
 def hmm_state_switch_client(state):
     global mode_no_state_trainsition_report
-    if not mode_no_state_trainsition_report:
+    if mode_no_state_trainsition_report:
         print 'mode_no_state_trainsition_report'
         return
     rospy.wait_for_service('hmm_state_switch')
     try:
 
+        from birl_baxter_tasks.srv import State_Switch, State_SwitchRequest
         hmm_state_switch_proxy = rospy.ServiceProxy('hmm_state_switch',
                                                     State_Switch)
         req = State_SwitchRequest()
