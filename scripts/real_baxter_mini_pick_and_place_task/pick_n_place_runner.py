@@ -16,12 +16,14 @@ if __name__ == '__main__':
 
     from task_states import assembly_user_defined_sm
     sm = assembly_user_defined_sm()
-    from introspection_framework.interface import modify_user_defined_sm
+    from introspection_framework.interface import modify_user_defined_sm, start_instrospection
 
     sm = modify_user_defined_sm(sm)
 
     sis = smach_ros.IntrospectionServer('MY_SERVER', sm, '/SM_ROOT')
     sis.start()
+
+    start_instrospection()
 
     outcome = sm.execute()
 

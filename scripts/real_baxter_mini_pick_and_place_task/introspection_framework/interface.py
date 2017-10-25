@@ -6,6 +6,7 @@ from core import (
     RollBackRecovery,
     write_exec_hist,
     hmm_state_switch_client,
+    send_image,
 )
 from constant import (
     ANOMALY_DETECTED,
@@ -13,6 +14,7 @@ from constant import (
     ANOMALY_NOT_DETECTED,
 )
 import copy
+import std_msgs.msg
 
 ## @brief wait for trajectory goal to be finished, perform preemptive anomaly detection in the meantime. 
 ## @param trajectory instance 
@@ -41,6 +43,8 @@ def execute_decorator(original_execute):
             depend_on_prev_state = True 
         write_exec_hist(self, type(self).__name__, userdata, depend_on_prev_state )
 
+        if get_event_flag() != ANOMALY_DETECTION_BLOCKED:
+            send_image('green.jpg')
 
         hmm_state_switch_client(state_no)
         ret = original_execute(self, userdata)
@@ -258,57 +262,20 @@ class BreakOnAnomalyTrajectoryClient(object):
         limb_angles = [limb_joints[joint] for joint in limb_names]
         return limb_angles
 
-    
-def delete_gazebo_models():
-# This will be called on ROS Exit, deleting Gazebo models
-# Do not wait for the Gazebo Delete Model service, since
-# Gazebo should already be running. If the service is not
-# available since Gazebo has been killed, it is fine to error out
-    try:
-        delete_model = rospy.ServiceProxy('/gazebo/delete_model', DeleteModel)
-        resp_delete = delete_model("box_male")
-        resp_delete = delete_model("box_female")
-    except rospy.ServiceException, e:
-        rospy.loginfo("Delete Model service call failed: {0}".format(e))
+def start_instrospection(
+    no_state_trainsition_report=False, 
+    no_anomaly_detection=False , 
+    use_manual_anomaly_signal=False
+):
+    import core
+    core.mode_no_state_trainsition_report = no_state_trainsition_report
 
+    if not no_anomaly_detection:
+        def callback_hmm(msg):
+            if get_event_flag() != ANOMALY_DETECTION_BLOCKED:
+                set_event_flag(ANOMALY_DETECTED) 
 
-def load_gazebo_models(model_name,
-                       model_pose=Pose(position=Point(x=0.6, y=0, z=-0.115),
-                                      orientation=Quaternion(x=0,y=0,z=0,w=1)),
-                       model_reference_frame="base"):
-    if model_name == "box_male":
-    # Get male box Path
-        model_path = rospkg.RosPack().get_path('birl_baxter_description')+"/urdf/box/"
-        # Load male box SDF
-        box_male_xml = ''
-        with open (model_path + "box_male/robots/box_male.URDF", "r") as box_male_file:
-            box_male_xml=box_male_file.read().replace('\n', '')
-            rospy.wait_for_service('/gazebo/spawn_urdf_model')
-        try:
-            spawn_urdf = rospy.ServiceProxy('/gazebo/spawn_urdf_model', SpawnModel)
-            resp_urdf = spawn_urdf("box_male", box_male_xml, "/",
-                                   model_pose, model_reference_frame)
-            rospy.loginfo("loading male box succesfully")
-        except rospy.ServiceException, e:
-            rospy.logerr("Spawn URDF service call failed: {0}".format(e))
-            return False
-
-
-    if model_name == "box_female":
-        # get path
-        model_path = rospkg.RosPack().get_path('birl_baxter_description')+"/urdf/box/"
-        # Load female box  URDF
-        box_female_xml = ''
-        with open (model_path + "box_female/robots/box_female.URDF", "r") as box_female_file:
-            box_female_xml=box_female_file.read().replace('\n', '')
-            rospy.wait_for_service('/gazebo/spawn_urdf_model')
-        try:
-            spawn_urdf2 = rospy.ServiceProxy('/gazebo/spawn_urdf_model', SpawnModel)
-            resp_urdf2 = spawn_urdf2("box_female", box_female_xml, "/",
-                                     model_pose, model_reference_frame)
-            rospy.loginfo("loading female box succesfully")
-        except rospy.ServiceException, e:
-            rospy.logerr("Spawn URDF service call failed: {0}".format(e))
-            return False
-    return True
-
+        if use_manual_anomaly_signal:
+            rospy.Subscriber("/manual_anomaly_signal", std_msgs.msg.String, callback_hmm)
+        else:
+            rospy.Subscriber("/anomaly_detection_signal", std_msgs.msg.Header, callback_hmm)

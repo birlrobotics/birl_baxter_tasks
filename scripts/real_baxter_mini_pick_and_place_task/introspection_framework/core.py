@@ -3,8 +3,9 @@ from constant import (
     ANOMALY_DETECTION_BLOCKED, 
     ANOMALY_NOT_DETECTED,
 )
-import std_msgs.msg
 import smach
+import os
+import rospy
 
 mode_no_state_trainsition_report = False 
 event_flag = 1
@@ -51,7 +52,7 @@ def send_image(path):
 
     @param path: path to the image file to load and send
     """
-    img = cv2.imread(os.path.dirname(os.path.realpath(__file__), 'image', path))
+    img = cv2.imread(os.path.join(os.path.dirname(os.path.realpath(__file__)), 'image', path))
     msg = cv_bridge.CvBridge().cv2_to_imgmsg(img, encoding="bgr8")
     pub = rospy.Publisher('/robot/xdisplay', Image, latch=True, queue_size=1)
     pub.publish(msg)
@@ -126,21 +127,3 @@ class RollBackRecovery(smach.State):
         set_event_flag(ANOMALY_DETECTION_BLOCKED)
         rospy.sleep(5)
         return 'Reenter_'+next_state
-
-def start_instrospection(
-    no_state_trainsition_report=False, 
-    no_anomaly_detection=False , 
-    use_manual_signal=False
-):
-    global mode_no_state_trainsition_report
-    mode_no_state_trainsition_report = no_state_trainsition_report
-
-    if not no_anomaly_detection:
-        def callback_hmm(msg):
-            if get_event_flag() != ANOMALY_DETECTION_BLOCKED:
-                set_event_flag(ANOMALY_DETECTED) 
-
-        if use_manual_anomaly_signal:
-            rospy.Subscriber("/manual_anomaly_signal", std_msgs.msg.String, callback_hmm)
-        else:
-            rospy.Subscriber("/anomaly_detection_signal", std_msgs.msg.Header, callback_hmm)
