@@ -28,10 +28,3 @@ if __name__ == '__main__':
     outcome = sm.execute()
 
     rospy.spin()
-
-
-
-
-
-
-

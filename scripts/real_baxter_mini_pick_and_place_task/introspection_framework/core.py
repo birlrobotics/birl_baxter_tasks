@@ -2,6 +2,7 @@ from constant import (
     ANOMALY_DETECTED,
     ANOMALY_DETECTION_BLOCKED, 
     ANOMALY_NOT_DETECTED,
+    RECOVERY_JUST_DONE,
 )
 import smach
 import os
@@ -84,8 +85,21 @@ class AnomalyDiagnosis(smach.State):
     def execute(self, userdata):
         hmm_state_switch_client(-1)
         send_image('red.jpg')
-        rospy.sleep(5)
-        return 'GoToRollBackRecovery'
+
+        from AnomalyClassification import AnomalyClassification
+        ac = AnomalyClassification()
+        if ac.classify_a_time_series(None):
+            pass
+        else:
+            while True:
+                rospy.loginfo("input a number to proceed:")
+                rospy.loginfo("-2 -- roll back recovery")
+                rospy.loginfo("-3 -- human teaching recovery")
+                i = raw_input()
+                if i == '-2':
+                    return 'GoToRollBackRecovery'
+                elif i == '-3':
+                    return 'GoToHumanTeachingRecovery'
 
 
 class HumanTeachingRecovery(smach.State):
@@ -93,7 +107,23 @@ class HumanTeachingRecovery(smach.State):
         smach.State.__init__(self, outcomes)
     def execute(self, userdata):
         hmm_state_switch_client(-3)
-        rospy.sleep(5)
+
+        while True:
+            rospy.loginfo("enter \"s\" to start teaching, \"f\" to finish")
+            i = raw_input()
+            if i == 's':
+                rospy.loginfo("start")
+                hmm_state_switch_client(-3)
+                break
+        while True:
+            rospy.loginfo("enter \"f\" to finish")
+            i = raw_input()
+            if i == 'f':
+                rospy.loginfo("end")
+                hmm_state_switch_client(0)
+                break
+
+        set_event_flag(RECOVERY_JUST_DONE)
         return 'RecoveryDone'
     
 class RollBackRecovery(smach.State):
