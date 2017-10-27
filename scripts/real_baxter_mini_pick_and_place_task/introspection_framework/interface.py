@@ -52,11 +52,11 @@ def execute_decorator(original_execute):
 
             if get_event_flag() != ANOMALY_DETECTION_BLOCKED:
                 send_image('green.jpg')
+                hmm_state_switch_client(state_no)
 
-            hmm_state_switch_client(state_no)
             ret = original_execute(self, userdata)
-            hmm_state_switch_client(0)
 
+            hmm_state_switch_client(0)
             if get_event_flag() == ANOMALY_DETECTION_BLOCKED:
                 set_event_flag(ANOMALY_NOT_DETECTED)
                 rospy.loginfo("UnBlock anomlay detection")
@@ -189,6 +189,13 @@ class BreakOnAnomalyTrajectoryClient(object):
 
     def stop(self):
         self._client.cancel_goal()
+
+    def check_motion_anomaly(self):
+        if get_event_flag() == ANOMALY_DETECTED:
+            # anomaly detected
+            return True 
+        else:
+            return False
 
     def wait(self, timeout=15.0):
         import time

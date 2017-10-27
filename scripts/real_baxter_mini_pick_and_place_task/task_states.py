@@ -111,8 +111,7 @@ class GoToPickPosition(smach.State):
 class GoToPickHoverPositionAgain(smach.State):
     def __init__(self):
         smach.State.__init__(self,
-                             outcomes=['Successful', 'NeedRecovery'])
-        self.state_no = 5
+                             outcomes=['Successful'])
         
     @execute_decorator   
     def execute(self, userdata):
@@ -120,6 +119,8 @@ class GoToPickHoverPositionAgain(smach.State):
         traj = BreakOnAnomalyTrajectoryClient(limb)
         limb_interface = baxter_interface.limb.Limb(limb)
         
+        traj.gripper_close()
+
         current_angles = [limb_interface.joint_angle(joint) for joint in limb_interface.joint_names()]
         hover_pick_object_pose = hardcoded_data.hover_pick_object_pose
         traj.clear('right')
@@ -129,11 +130,7 @@ class GoToPickHoverPositionAgain(smach.State):
 
         goal_achieved = traj.wait(5)
         traj.stop()
-        if goal_achieved:
-            traj.gripper_close()
-            return 'Successful'
-        else:
-            return 'NeedRecovery'    
+        return 'Successful'
 
 def assembly_user_defined_sm():
     sm = smach.StateMachine(outcomes=['TaskFailed', 'TaskSuccessful'])
@@ -167,7 +164,6 @@ def assembly_user_defined_sm():
 			GoToPickHoverPositionAgain.__name__,
 			GoToPickHoverPositionAgain(),
             transitions={
-                'NeedRecovery': 'Recovery',
                 'Successful':'TaskSuccessful'
             }
         )
