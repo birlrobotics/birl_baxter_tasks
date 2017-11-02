@@ -39,8 +39,11 @@ class CalibrateForceSensor(smach.State):
         rospy.sleep(5)
         from std_srvs.srv import Trigger
         trigger = rospy.ServiceProxy('/robotiq_wrench_calibration_service', Trigger)
-        resp = trigger()
-        rospy.sleep(5)
+        try:
+            resp = trigger()
+            rospy.sleep(5)
+        except rospy.ServiceException as exc:
+            rospy.logerr("calling force sensor calibration failed")
         return 'Successful'
 
 class GotoPickHoverPosition(smach.State):
@@ -101,11 +104,11 @@ class GoToPickPosition(smach.State):
         traj.start()
 
         goal_achieved = traj.wait(5)
-        traj.stop()
         if goal_achieved:
             traj.gripper_close()
             return 'Successful'
         else:
+            traj.stop()
             return 'NeedRecovery'    
 
 class GoToPickHoverPositionAgain(smach.State):
@@ -129,8 +132,11 @@ class GoToPickHoverPositionAgain(smach.State):
         traj.start()
 
         goal_achieved = traj.wait(5)
-        traj.stop()
-        return 'Successful'
+        if goal_achieved:
+            return 'Successful'
+        else:
+            traj.stop()
+            return 'Successful'
 
 def assembly_user_defined_sm():
     sm = smach.StateMachine(outcomes=['TaskFailed', 'TaskSuccessful'])

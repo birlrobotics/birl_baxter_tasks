@@ -23,7 +23,10 @@ if __name__ == '__main__':
     sis = smach_ros.IntrospectionServer('MY_SERVER', sm, '/SM_ROOT')
     sis.start()
 
-    start_instrospection(no_anomaly_detection=False)
+    start_instrospection(
+        no_anomaly_detection=False,
+        use_manual_anomaly_signal=True,
+    )
 
     outcome = sm.execute()
 

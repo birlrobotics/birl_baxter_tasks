@@ -17,20 +17,6 @@ from constant import (
 import copy
 import std_msgs.msg
 
-## @brief wait for trajectory goal to be finished, perform preemptive anomaly detection in the meantime. 
-## @param trajectory instance 
-## @return True if anomaly is detected.
-def wait_for_motion_and_detect_anomaly(traj_obj):
-    # loop while the motion is not finished
-    while not traj.wait(0.00001):
-        # anomaly is detected
-        if get_event_flag() == ANOMALY_DETECTED:
-            traj_obj.stop()
-            rospy.loginfo("anomaly detected")
-            return True
-
-    return False
-
 def execute_decorator(original_execute):
     def f(self, userdata): 
         if get_event_flag() == RECOVERY_JUST_DONE:
@@ -197,15 +183,17 @@ class BreakOnAnomalyTrajectoryClient(object):
         else:
             return False
 
-    def wait(self, timeout=15.0):
-        import time
-        start_time = time.time()
+    def wait(self, timeout=rospy.Duration(0.0)):
+        if type(timeout) == int:
+            timeout = rospy.Duration(timeout)
+        timeout_time = rospy.get_rostime() + timeout
         while not rospy.is_shutdown():
             if get_event_flag() == ANOMALY_DETECTED:
                 # anomaly detected
                 return False
 
-            if timeout > 0 and time.time()-start_time > timeout:
+            if timeout != rospy.Duration(0.0) and rospy.get_rostime() > timeout_time:
+                rospy.logerr("traj exec timeout")
                 # timeout and not finished
                 return False
 
@@ -281,13 +269,14 @@ def start_instrospection(
 ):
     import core
     core.mode_no_state_trainsition_report = no_state_trainsition_report
-
     if not no_anomaly_detection:
         def callback_hmm(msg):
             if get_event_flag() != ANOMALY_DETECTION_BLOCKED:
+                rospy.logerr("hmm signaled an anomaly")
                 set_event_flag(ANOMALY_DETECTED) 
 
         if use_manual_anomaly_signal:
             rospy.Subscriber("/manual_anomaly_signal", std_msgs.msg.String, callback_hmm)
         else:
             rospy.Subscriber("/anomaly_detection_signal", std_msgs.msg.Header, callback_hmm)
+
