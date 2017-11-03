@@ -7,10 +7,12 @@ from constant import (
 import smach
 import os
 import rospy
+import ipdb
 
 mode_no_state_trainsition_report = False 
 event_flag = 1
 execution_history = []
+latest_anomaly_t = None
 
 def get_event_flag():
     global event_flag
@@ -83,12 +85,14 @@ class AnomalyDiagnosis(smach.State):
     def __init__(self, outcomes):
         smach.State.__init__(self, outcomes)
     def execute(self, userdata):
+        global latest_anomaly_t
+
         hmm_state_switch_client(-1)
         send_image('red.jpg')
 
         from AnomalyClassification import AnomalyClassification
         ac = AnomalyClassification()
-        if ac.classify_a_time_series(None):
+        if ac.classify_anomaly_at(latest_anomaly_t):
             pass
         else:
             while True:
@@ -158,3 +162,20 @@ class RollBackRecovery(smach.State):
         set_event_flag(ANOMALY_DETECTION_BLOCKED)
         rospy.sleep(5)
         return 'Reenter_'+next_state
+
+def listen_HMM_anomaly_signal(use_manual_anomaly_signal):
+    def callback_hmm(msg):
+        global latest_anomaly_t
+        print msg
+        if get_event_flag() != ANOMALY_DETECTION_BLOCKED:
+            rospy.logerr("hmm signaled an anomaly")
+            set_event_flag(ANOMALY_DETECTED) 
+            anomaly_t = msg.stamp.to_sec()
+            latest_anomaly_t = anomaly_t
+
+    import std_msgs.msg
+    if use_manual_anomaly_signal:
+        rospy.Subscriber("/manual_anomaly_signal", std_msgs.msg.Header, callback_hmm)
+    else:
+        rospy.Subscriber("/anomaly_detection_signal", std_msgs.msg.Header, callback_hmm)
+

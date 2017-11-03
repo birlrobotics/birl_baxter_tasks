@@ -7,6 +7,7 @@ from core import (
     write_exec_hist,
     hmm_state_switch_client,
     send_image,
+    listen_HMM_anomaly_signal,
 )
 from constant import (
     ANOMALY_DETECTED,
@@ -15,7 +16,6 @@ from constant import (
     RECOVERY_JUST_DONE,
 )
 import copy
-import std_msgs.msg
 
 def execute_decorator(original_execute):
     def f(self, userdata): 
@@ -270,13 +270,4 @@ def start_instrospection(
     import core
     core.mode_no_state_trainsition_report = no_state_trainsition_report
     if not no_anomaly_detection:
-        def callback_hmm(msg):
-            if get_event_flag() != ANOMALY_DETECTION_BLOCKED:
-                rospy.logerr("hmm signaled an anomaly")
-                set_event_flag(ANOMALY_DETECTED) 
-
-        if use_manual_anomaly_signal:
-            rospy.Subscriber("/manual_anomaly_signal", std_msgs.msg.String, callback_hmm)
-        else:
-            rospy.Subscriber("/anomaly_detection_signal", std_msgs.msg.Header, callback_hmm)
-
+        listen_HMM_anomaly_signal(use_manual_anomaly_signal)
