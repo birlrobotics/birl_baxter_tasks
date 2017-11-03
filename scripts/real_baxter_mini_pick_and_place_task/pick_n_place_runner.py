@@ -25,7 +25,7 @@ if __name__ == '__main__':
 
     start_instrospection(
         no_anomaly_detection=False,
-        use_manual_anomaly_signal=True,
+        use_manual_anomaly_signal=False,
     )
 
     outcome = sm.execute()

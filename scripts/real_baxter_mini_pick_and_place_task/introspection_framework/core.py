@@ -89,10 +89,13 @@ class AnomalyDiagnosis(smach.State):
 
         hmm_state_switch_client(-1)
         send_image('red.jpg')
+        rospy.sleep(5)
 
         from AnomalyClassification import AnomalyClassification
         ac = AnomalyClassification()
-        if ac.classify_anomaly_at(latest_anomaly_t):
+        anomaly_t = latest_anomaly_t
+        latest_anomaly_t = None
+        if ac.classify_anomaly_at(anomaly_t):
             pass
         else:
             while True:
@@ -171,7 +174,8 @@ def listen_HMM_anomaly_signal(use_manual_anomaly_signal):
             rospy.logerr("hmm signaled an anomaly")
             set_event_flag(ANOMALY_DETECTED) 
             anomaly_t = msg.stamp.to_sec()
-            latest_anomaly_t = anomaly_t
+            if latest_anomaly_t is None:
+                latest_anomaly_t = anomaly_t
 
     import std_msgs.msg
     if use_manual_anomaly_signal:
