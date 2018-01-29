@@ -3,7 +3,6 @@ import hardcoded_data
 import baxter_interface
 import rospy
 from smach_based_introspection_framework.interface import (
-    execute_decorator,
     BreakOnAnomalyTrajectoryClient,
 )
 import copy
@@ -12,7 +11,6 @@ class CalibrateForceSensor(smach.State):
     def __init__(self):
         smach.State.__init__(self, outcomes=['Successful'])
 
-    @execute_decorator   
     def execute(self, userdata):
         limb = 'right'
         traj = BreakOnAnomalyTrajectoryClient(limb)
@@ -55,7 +53,6 @@ class GotoPickHoverPosition(smach.State):
     def __init__(self):
         smach.State.__init__(self, outcomes=['Successful'])
         
-    @execute_decorator   
     def execute(self, userdata):
         limb = 'right'
         traj = BreakOnAnomalyTrajectoryClient(limb)
@@ -79,7 +76,6 @@ class GoToPickPosition(smach.State):
         self.state_no = 2
         self.depend_on_prev_state = True
         
-    @execute_decorator   
     def execute(self, userdata):
         limb = 'right'
         traj = BreakOnAnomalyTrajectoryClient(limb)
@@ -121,7 +117,6 @@ class GoToPickHoverPositionAgain(smach.State):
         smach.State.__init__(self,
                              outcomes=['Successful'])
         
-    @execute_decorator   
     def execute(self, userdata):
         limb = 'right'
         traj = BreakOnAnomalyTrajectoryClient(limb)
