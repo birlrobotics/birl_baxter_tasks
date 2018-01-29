@@ -22,6 +22,10 @@ class CalibrateForceSensor(smach.State):
             Pose,
             Quaternion,
         )
+
+        current_angles = [limb_interface.joint_angle(joint) for joint in limb_interface.joint_names()]
+        traj.add_point(current_angles, 0.0)
+
         calibration_pose = Pose()
         calibration_pose.position.x = 0.76301988477
         calibration_pose.position.y = -0.290728116404
@@ -38,12 +42,13 @@ class CalibrateForceSensor(smach.State):
         traj.wait(5)
         rospy.sleep(5)
         from std_srvs.srv import Trigger
-        trigger = rospy.ServiceProxy('/robotiq_wrench_calibration_service', Trigger)
         try:
+            rospy.wait_for_service('/robotiq_wrench_calibration_service', timeout=3)
+            trigger = rospy.ServiceProxy('/robotiq_wrench_calibration_service', Trigger)
             resp = trigger()
             rospy.sleep(5)
-        except rospy.ServiceException as exc:
-            rospy.logerr("calling force sensor calibration failed")
+        except Exception as exc:
+            rospy.logerr("calling force sensor calibration failed: %s"%exc)
         return 'Successful'
 
 class GotoPickHoverPosition(smach.State):
