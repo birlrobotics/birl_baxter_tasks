@@ -2,7 +2,7 @@ import smach
 import hardcoded_data
 import baxter_interface
 import rospy
-from introspection_framework.interface import (
+from smach_based_introspection_framework.interface import (
     execute_decorator,
     BreakOnAnomalyTrajectoryClient,
 )

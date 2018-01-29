@@ -1,6 +1,5 @@
 #!/usr/bin/env python
 import baxter_interface
-from birl_baxter_tasks.srv import *
 
 import rospy
 
@@ -16,7 +15,7 @@ if __name__ == '__main__':
 
     from task_states import assembly_user_defined_sm
     sm = assembly_user_defined_sm()
-    from introspection_framework.interface import modify_user_defined_sm, start_instrospection
+    from smach_based_introspection_framework.interface import modify_user_defined_sm, start_instrospection
 
     sm = modify_user_defined_sm(sm)
 
