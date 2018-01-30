@@ -10,6 +10,8 @@ import copy
 class CalibrateForceSensor(smach.State):
     def __init__(self):
         smach.State.__init__(self, outcomes=['Successful'])
+        self.state_no = 1
+        self.depend_on_prev_state = False
 
     def execute(self, userdata):
         limb = 'right'
@@ -52,6 +54,8 @@ class CalibrateForceSensor(smach.State):
 class GotoPickHoverPosition(smach.State):
     def __init__(self):
         smach.State.__init__(self, outcomes=['Successful'])
+        self.state_no = 2
+        self.depend_on_prev_state = False
         
     def execute(self, userdata):
         limb = 'right'
@@ -73,8 +77,8 @@ class GoToPickPosition(smach.State):
     def __init__(self):
         smach.State.__init__(self,
                              outcomes=['Successful', 'NeedRecovery'])
-        self.state_no = 2
-        self.depend_on_prev_state = True
+        self.state_no = 3
+        self.depend_on_prev_state = True 
         
     def execute(self, userdata):
         limb = 'right'
@@ -116,6 +120,8 @@ class GoToPickHoverPositionAgain(smach.State):
     def __init__(self):
         smach.State.__init__(self,
                              outcomes=['Successful'])
+        self.state_no = 4
+        self.depend_on_prev_state = False
         
     def execute(self, userdata):
         limb = 'right'
