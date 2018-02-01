@@ -26,17 +26,7 @@ class CalibrateForceSensor(smach.State):
         current_angles = [limb_interface.joint_angle(joint) for joint in limb_interface.joint_names()]
         traj.add_point(current_angles, 0.0)
 
-        calibration_pose = Pose()
-        calibration_pose.position.x = 0.76301988477
-        calibration_pose.position.y = -0.290728116404
-        calibration_pose.position.z = -0.0195624201388+0.15
-        calibration_pose.orientation = Quaternion(
-            x= -0.0259799924463,
-            y= 0.999465665097,
-            z= 0.00445775211005,
-            w= 0.0193275122869,
-        )
-
+        calibration_pose = hardcoded_data.calibration_pose
         traj.add_pose_point(calibration_pose, 4.0)
         traj.start()
         traj.wait(5)
@@ -50,6 +40,9 @@ class CalibrateForceSensor(smach.State):
         except Exception as exc:
             rospy.logerr("calling force sensor calibration failed: %s"%exc)
         return 'Successful'
+
+    def get_DMP_goal(self):
+        return hardcoded_data.calibration_pose
 
 class GotoPickHoverPosition(smach.State):
     def __init__(self):
@@ -71,6 +64,9 @@ class GotoPickHoverPosition(smach.State):
         traj.wait(5)
 
         return 'Successful'
+
+    def get_DMP_goal(self):
+        return hardcoded_data.hover_pick_object_pose
 
 
 class GoToPickPosition(smach.State):
@@ -116,6 +112,9 @@ class GoToPickPosition(smach.State):
             traj.stop()
             return 'NeedRecovery'    
 
+    def get_DMP_goal(self):
+        return hardcoded_data.pick_object_pose
+
 class GoToPickHoverPositionAgain(smach.State):
     def __init__(self):
         smach.State.__init__(self,
@@ -143,6 +142,9 @@ class GoToPickHoverPositionAgain(smach.State):
         else:
             traj.stop()
             return 'Successful'
+
+    def get_DMP_goal(self):
+        return hardcoded_data.hover_pick_object_pose
 
 def assembly_user_defined_sm():
     sm = smach.StateMachine(outcomes=['TaskFailed', 'TaskSuccessful'])

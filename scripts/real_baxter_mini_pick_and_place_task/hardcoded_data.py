@@ -40,3 +40,13 @@ hover_pick_object_pose.position.z += hover_distance
 hover_place_object_pose = copy.deepcopy(place_object_pose)
 hover_place_object_pose.position.z += hover_distance
 
+calibration_pose = Pose()
+calibration_pose.position.x = 0.76301988477
+calibration_pose.position.y = -0.290728116404
+calibration_pose.position.z = -0.0195624201388+0.15
+calibration_pose.orientation = Quaternion(
+    x= -0.0259799924463,
+    y= 0.999465665097,
+    z= 0.00445775211005,
+    w= 0.0193275122869,
+)
