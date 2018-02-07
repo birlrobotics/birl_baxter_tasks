@@ -2,7 +2,7 @@ import smach
 import hardcoded_data
 import baxter_interface
 import rospy
-from smach_based_introspection_framework.motion_handler import (
+from smach_based_introspection_framework.online_part.motion_handler import (
     BreakOnAnomalyTrajectoryClient,
 )
 import copy
